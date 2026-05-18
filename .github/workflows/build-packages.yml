@@ -35,29 +35,39 @@ jobs:
         run: |
           $config = Get-Content -LiteralPath ".github/build-config.json" -Raw | ConvertFrom-Json
           $buildText = Get-Content -LiteralPath "app/build.gradle.kts" -Raw
+          $strings = [xml](Get-Content -LiteralPath "app/src/main/res/values/strings.xml" -Raw)
           $versionNameMatch = [regex]::Match($buildText, 'versionName\s*=\s*"([^"]+)"')
           $versionCodeMatch = [regex]::Match($buildText, 'versionCode\s*=\s*(\d+)')
+          $appNameNode = $strings.resources.string | Where-Object { $_.name -eq "app_name" } | Select-Object -First 1
           if (-not $versionNameMatch.Success) {
             throw "app/build.gradle.kts 缺少 versionName"
           }
           if (-not $versionCodeMatch.Success) {
             throw "app/build.gradle.kts 缺少 versionCode"
           }
+          if ($null -eq $appNameNode) {
+            throw "app/src/main/res/values/strings.xml 缺少 app_name"
+          }
           $versionName = $versionNameMatch.Groups[1].Value
           $versionCode = $versionCodeMatch.Groups[1].Value
+          $appName = $appNameNode.InnerText
           if ([string]::IsNullOrWhiteSpace($versionName)) {
             throw "versionName 为空"
+          }
+          if ([string]::IsNullOrWhiteSpace($appName)) {
+            throw "app_name 为空"
           }
           if ($versionCode -notmatch '^\d+$') {
             throw "versionCode 必须是整数，当前值：$versionCode"
           }
+          $safeAppName = [regex]::Replace($appName.Trim(), '[\\/:*?"<>|]', '-')
           "build_enabled=$($config.build.enabled.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           "android_enabled=$($config.android.enabled.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           "release_enabled=$($config.githubRelease.enabled.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
           "release_type=$($config.githubRelease.type)" >> $env:GITHUB_OUTPUT
           "release_tag=v$versionName" >> $env:GITHUB_OUTPUT
-          "release_title=UsageNotify v$versionName" >> $env:GITHUB_OUTPUT
-          "release_asset=usage-notify-v$versionName-android-release.apk" >> $env:GITHUB_OUTPUT
+          "release_title=v$versionName" >> $env:GITHUB_OUTPUT
+          "release_asset=$safeAppName-Android-v$versionName.apk" >> $env:GITHUB_OUTPUT
 
   android-signed:
     name: Android signed APK
@@ -201,7 +211,7 @@ jobs:
             echo
             echo
             echo "## 版本下载"
-            echo "- Android release APK：[${{ needs.prepare.outputs.release_asset }}](https://github.com/${{ github.repository }}/releases/download/$tag/${{ needs.prepare.outputs.release_asset }})"
+            echo "- Android安装包：[${{ needs.prepare.outputs.release_asset }}](https://github.com/${{ github.repository }}/releases/download/$tag/${{ needs.prepare.outputs.release_asset }})"
           } > release-notes.md
 
       - name: Create GitHub Release
