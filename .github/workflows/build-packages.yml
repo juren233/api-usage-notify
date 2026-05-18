@@ -131,6 +131,9 @@ jobs:
         shell: pwsh
         run: |
           .\gradlew.bat --refresh-dependencies assembleRelease
+          if ($LASTEXITCODE -ne 0) {
+            exit $LASTEXITCODE
+          }
           Copy-Item -LiteralPath "app\build\outputs\apk\release\app-release.apk" -Destination "script\UsageNotify-release.apk" -Force
 
       - name: Verify signed Android APK
