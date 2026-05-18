@@ -1,0 +1,20 @@
+{
+  "_comment": "UsageNotify 自动构建配置。除注释字段外，开关只改 true 或 false。",
+  "build": {
+    "_comment": "总构建开关。关闭后 GitHub Actions 不再编译任何产物。",
+    "enabled_comment": "true 表示开启自动编译；false 表示关闭全部编译。",
+    "enabled": true
+  },
+  "android": {
+    "_comment": "Android 构建配置。",
+    "enabled_comment": "true 表示构建 Android；false 表示跳过 Android。",
+    "enabled": true
+  },
+  "githubRelease": {
+    "_comment": "GitHub Release 配置。",
+    "enabled_comment": "true 表示构建成功后创建 GitHub Release；false 表示只上传 Actions Artifacts。",
+    "enabled": false,
+    "type_comment": "release 表示正式版；prerelease 表示预发布版。",
+    "type": "release"
+  }
+}
