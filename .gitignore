@@ -1,0 +1,18 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Signing
+app/signing/usagenotify.jks
+app/signing/signing.properties
+
+# Build artifacts in script folder
+script/*.apk

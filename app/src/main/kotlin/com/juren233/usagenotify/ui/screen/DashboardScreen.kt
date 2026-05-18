@@ -1,0 +1,172 @@
+package com.juren233.usagenotify.ui.screen
+
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.juren233.usagenotify.service.BalancePollingService
+import com.juren233.usagenotify.ui.component.BalanceCard
+import com.juren233.usagenotify.ui.viewmodel.DashboardViewModel
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun DashboardScreen(
+    onNavigateToAddSite: () -> Unit,
+    onNavigateToSiteDetail: (Long) -> Unit,
+    onNavigateToSettings: () -> Unit,
+    viewModel: DashboardViewModel = hiltViewModel(),
+) {
+    val sites by viewModel.sites.collectAsState()
+    val pollingState by viewModel.pollingState.collectAsState()
+    val context = LocalContext.current
+
+    val notifPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { /* granted or not, proceed */ }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("UsageNotify") },
+                actions = {
+                    IconButton(onClick = {
+                        if (pollingState.isPolling) {
+                            context.stopService(Intent(context, BalancePollingService::class.java))
+                        } else {
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                if (ContextCompat.checkSelfPermission(
+                                        context, Manifest.permission.POST_NOTIFICATIONS
+                                    ) != PackageManager.PERMISSION_GRANTED
+                                ) {
+                                    notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                }
+                            }
+                            context.startForegroundService(
+                                Intent(context, BalancePollingService::class.java)
+                            )
+                        }
+                    }) {
+                        Icon(
+                            if (pollingState.isPolling) Icons.Default.Stop else Icons.Default.PlayArrow,
+                            contentDescription = if (pollingState.isPolling) "停止监控" else "开始监控",
+                        )
+                    }
+                    IconButton(onClick = onNavigateToSettings) {
+                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                    }
+                },
+            )
+        },
+        floatingActionButton = {
+            FloatingActionButton(onClick = onNavigateToAddSite) {
+                Icon(Icons.Default.Add, contentDescription = "添加站点")
+            }
+        },
+    ) { padding ->
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(20.dp)) {
+                        Text("总余额", style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            "$${String.format("%.2f", pollingState.totalBalance)}",
+                            style = MaterialTheme.typography.displaySmall,
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                "${sites.size} 个站点",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                            if (pollingState.lastUpdated > 0) {
+                                val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+                                Text(
+                                    "更新于 ${timeFormat.format(Date(pollingState.lastUpdated))}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (sites.isEmpty()) {
+                item {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text("暂无站点", style = MaterialTheme.typography.bodyLarge)
+                        Text(
+                            "点击右下角 + 添加中转站",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+
+            items(sites, key = { it.id }) { site ->
+                BalanceCard(
+                    site = site,
+                    balanceResult = pollingState.balances[site.id],
+                    onClick = { onNavigateToSiteDetail(site.id) },
+                )
+            }
+        }
+    }
+}
