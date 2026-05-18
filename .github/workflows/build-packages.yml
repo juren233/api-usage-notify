@@ -136,6 +136,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          chmod +x ./gradlew
           ./gradlew assembleRelease
           mkdir -p script
           cp app/build/outputs/apk/release/app-release.apk script/UsageNotify-release.apk
