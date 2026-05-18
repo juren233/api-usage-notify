@@ -13,8 +13,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,10 +32,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.juren233.usagenotify.R
 import com.juren233.usagenotify.data.model.BalanceResult
 import com.juren233.usagenotify.ui.viewmodel.hasCredentialInput
 import com.juren233.usagenotify.ui.viewmodel.SiteViewModel
@@ -127,7 +127,9 @@ fun AddEditSiteScreen(
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                painter = painterResource(
+                                    if (passwordVisible) R.drawable.ic_visibility_24 else R.drawable.ic_visibility_off_24
+                                ),
                                 contentDescription = null,
                             )
                         }
@@ -144,7 +146,9 @@ fun AddEditSiteScreen(
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                painter = painterResource(
+                                    if (passwordVisible) R.drawable.ic_visibility_24 else R.drawable.ic_visibility_off_24
+                                ),
                                 contentDescription = null,
                             )
                         }

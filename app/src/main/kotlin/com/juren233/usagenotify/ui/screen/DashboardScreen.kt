@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,9 +35,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.juren233.usagenotify.R
 import com.juren233.usagenotify.service.BalancePollingService
 import com.juren233.usagenotify.ui.component.BalanceCard
 import com.juren233.usagenotify.ui.viewmodel.DashboardViewModel
@@ -84,10 +85,14 @@ fun DashboardScreen(
                             )
                         }
                     }) {
-                        Icon(
-                            if (pollingState.isPolling) Icons.Default.Stop else Icons.Default.PlayArrow,
-                            contentDescription = if (pollingState.isPolling) "停止监控" else "开始监控",
-                        )
+                        if (pollingState.isPolling) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_stop_24),
+                                contentDescription = "停止监控",
+                            )
+                        } else {
+                            Icon(Icons.Default.PlayArrow, contentDescription = "开始监控")
+                        }
                     }
                     IconButton(onClick = onNavigateToSettings) {
                         Icon(Icons.Default.Settings, contentDescription = "设置")

@@ -40,6 +40,10 @@ class LiveUpdateNotificationManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) {
 
+    private val moneyIcon by lazy(LazyThreadSafetyMode.NONE) { createMoneyIcon() }
+    private val fireIcon by lazy(LazyThreadSafetyMode.NONE) { createFireIcon() }
+    private val warningIcon by lazy(LazyThreadSafetyMode.NONE) { createWarningIcon() }
+
     companion object {
         const val NOTIFICATION_ID = 1001
         private const val SCALE = 100
@@ -105,9 +109,9 @@ class LiveUpdateNotificationManager @Inject constructor(
             .setStyledByProgress(true)
             .setProgressIndeterminate(isIndeterminate)
             .setProgress(progress)
-            .setProgressStartIcon(createEmojiIcon("💰"))
-            .setProgressTrackerIcon(createEmojiIcon("🔥"))
-            .setProgressEndIcon(createEmojiIcon("⚠️"))
+            .setProgressStartIcon(moneyIcon)
+            .setProgressTrackerIcon(fireIcon)
+            .setProgressEndIcon(warningIcon)
             .addProgressSegment(
                 NotificationCompat.ProgressStyle.Segment(segmentLengths[0])
                     .setId(1)
@@ -173,6 +177,12 @@ class LiveUpdateNotificationManager @Inject constructor(
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, notification)
     }
+
+    private fun createMoneyIcon(): IconCompat = createEmojiIcon("💰")
+
+    private fun createFireIcon(): IconCompat = createEmojiIcon("🔥")
+
+    private fun createWarningIcon(): IconCompat = createEmojiIcon("⚠️")
 
     private fun createEmojiIcon(emoji: String): IconCompat {
         val density = context.resources.displayMetrics.density

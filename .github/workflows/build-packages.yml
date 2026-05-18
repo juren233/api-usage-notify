@@ -61,7 +61,7 @@ jobs:
 
   android-signed:
     name: Android signed APK
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: prepare
     if: needs.prepare.outputs.build_enabled == 'true' && needs.prepare.outputs.android_enabled == 'true'
@@ -85,69 +85,70 @@ jobs:
         uses: gradle/actions/setup-gradle@v6
 
       - name: Restore Android signing material
-        shell: pwsh
+        shell: bash
         run: |
-          New-Item -ItemType Directory -Force -Path app\signing | Out-Null
-          $keystorePath = "app\signing\usagenotify.jks"
-          if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEYSTORE_BASE64)) {
-            if ($env:RELEASE_ENABLED -eq "true") {
-              throw "已开启 GitHub Release，但缺少 Android 签名 Secrets"
-            }
-            $storePassword = "android"
-            $keyAlias = "androiddebugkey"
-            $keyPassword = "android"
-            & "$env:JAVA_HOME\bin\keytool.exe" -genkeypair -v `
-              -keystore $keystorePath `
-              -storepass $storePassword `
-              -keypass $keyPassword `
-              -alias $keyAlias `
-              -keyalg RSA `
-              -keysize 2048 `
-              -validity 36500 `
+          set -euo pipefail
+          mkdir -p app/signing
+          keystore_path="app/signing/usagenotify.jks"
+          if [[ -z "${ANDROID_KEYSTORE_BASE64:-}" ]]; then
+            if [[ "${RELEASE_ENABLED:-false}" == "true" ]]; then
+              echo "已开启 GitHub Release，但缺少 Android 签名 Secrets" >&2
+              exit 1
+            fi
+            store_password="android"
+            key_alias="androiddebugkey"
+            key_password="android"
+            keytool -genkeypair -v \
+              -keystore "$keystore_path" \
+              -storepass "$store_password" \
+              -keypass "$key_password" \
+              -alias "$key_alias" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 36500 \
               -dname "CN=UsageNotify CI, OU=CI, O=OpenAI, L=Earth, S=Earth, C=US"
-          } else {
-            if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEYSTORE_PASSWORD)) {
-              throw "缺少 GitHub Secret：ANDROID_KEYSTORE_PASSWORD"
-            }
-            if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEY_ALIAS)) {
-              throw "缺少 GitHub Secret：ANDROID_KEY_ALIAS"
-            }
-            if ([string]::IsNullOrWhiteSpace($env:ANDROID_KEY_PASSWORD)) {
-              throw "缺少 GitHub Secret：ANDROID_KEY_PASSWORD"
-            }
-            [IO.File]::WriteAllBytes($keystorePath, [Convert]::FromBase64String($env:ANDROID_KEYSTORE_BASE64))
-            $storePassword = $env:ANDROID_KEYSTORE_PASSWORD
-            $keyAlias = $env:ANDROID_KEY_ALIAS
-            $keyPassword = $env:ANDROID_KEY_PASSWORD
-          }
-          @"
+          else
+            if [[ -z "${ANDROID_KEYSTORE_PASSWORD:-}" ]]; then
+              echo "缺少 GitHub Secret：ANDROID_KEYSTORE_PASSWORD" >&2
+              exit 1
+            fi
+            if [[ -z "${ANDROID_KEY_ALIAS:-}" ]]; then
+              echo "缺少 GitHub Secret：ANDROID_KEY_ALIAS" >&2
+              exit 1
+            fi
+            if [[ -z "${ANDROID_KEY_PASSWORD:-}" ]]; then
+              echo "缺少 GitHub Secret：ANDROID_KEY_PASSWORD" >&2
+              exit 1
+            fi
+            printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > "$keystore_path"
+            store_password="$ANDROID_KEYSTORE_PASSWORD"
+            key_alias="$ANDROID_KEY_ALIAS"
+            key_password="$ANDROID_KEY_PASSWORD"
+          fi
+          cat > app/signing/signing.properties <<EOF
           storeFile=signing/usagenotify.jks
-          storePassword=$storePassword
-          keyAlias=$keyAlias
-          keyPassword=$keyPassword
-          "@ | Set-Content -LiteralPath "app\signing\signing.properties" -Encoding UTF8
+          storePassword=$store_password
+          keyAlias=$key_alias
+          keyPassword=$key_password
+          EOF
 
       - name: Build Android package
-        shell: pwsh
+        shell: bash
         run: |
-          .\gradlew.bat --refresh-dependencies assembleRelease
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
-          Copy-Item -LiteralPath "app\build\outputs\apk\release\app-release.apk" -Destination "script\UsageNotify-release.apk" -Force
+          set -euo pipefail
+          ./gradlew assembleRelease
+          mkdir -p script
+          cp app/build/outputs/apk/release/app-release.apk script/UsageNotify-release.apk
 
       - name: Verify signed Android APK
-        shell: pwsh
+        shell: bash
         run: |
-          $apk = Get-Item -LiteralPath "script\UsageNotify-release.apk" -ErrorAction Stop
-          $apksigner = Get-ChildItem -LiteralPath "$env:ANDROID_HOME\build-tools" -Recurse -Filter "apksigner.bat" |
-            Sort-Object FullName -Descending |
-            Select-Object -First 1 -ExpandProperty FullName
-          & $apksigner verify --verbose --print-certs $apk.FullName
-          $hash = Get-FileHash -LiteralPath $apk.FullName -Algorithm SHA256
-          Write-Host "产物：$($apk.FullName)"
-          Write-Host "大小：$($apk.Length) bytes"
-          Write-Host "SHA256：$($hash.Hash)"
+          set -euo pipefail
+          apk="script/UsageNotify-release.apk"
+          apksigner="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -name apksigner -type f | sort -V | tail -n 1)"
+          "$apksigner" verify --verbose --print-certs "$apk"
+          sha256sum "$apk"
+          stat --printf='产物：%n\n大小：%s bytes\n' "$apk"
 
       - name: Upload Android artifacts
         uses: actions/upload-artifact@v7
