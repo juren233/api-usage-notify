@@ -129,7 +129,9 @@ jobs:
 
       - name: Build Android package
         shell: pwsh
-        run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\script\build-release.ps1
+        run: |
+          .\gradlew.bat --refresh-dependencies assembleRelease
+          Copy-Item -LiteralPath "app\build\outputs\apk\release\app-release.apk" -Destination "script\UsageNotify-release.apk" -Force
 
       - name: Verify signed Android APK
         shell: pwsh
