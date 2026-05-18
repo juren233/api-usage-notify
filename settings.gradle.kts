@@ -1,11 +1,8 @@
 pluginManagement {
     repositories {
         google()
-        maven("https://maven.aliyun.com/repository/central")
         mavenCentral()
         gradlePluginPortal()
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/public")
     }
     resolutionStrategy {
         eachPlugin {
@@ -20,10 +17,7 @@ dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
-        maven("https://maven.aliyun.com/repository/central")
         mavenCentral()
-        maven("https://maven.aliyun.com/repository/google")
-        maven("https://maven.aliyun.com/repository/public")
     }
 }
 
