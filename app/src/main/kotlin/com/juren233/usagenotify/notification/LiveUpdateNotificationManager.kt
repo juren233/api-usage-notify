@@ -149,7 +149,7 @@ class LiveUpdateNotificationManager @Inject constructor(
             )
 
         val builder = NotificationCompat.Builder(context, NotificationChannels.LIVE_UPDATE_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification)
+            .setSmallIcon(R.drawable.ic_launcher_monochrome)
             .setContentTitle("AI API 总余额")
             .setContentText("$balanceText | $siteCount 个站点")
             .setShortCriticalText(balanceText)
