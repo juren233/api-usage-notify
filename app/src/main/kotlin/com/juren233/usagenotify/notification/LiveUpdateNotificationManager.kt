@@ -36,6 +36,18 @@ data class BalanceThresholds(
     }
 }
 
+internal fun resolveLiveUpdateStateIconRes(
+    balance: Double,
+    thresholds: BalanceThresholds,
+): Int {
+    val normalizedThresholds = thresholds.normalized()
+    return when {
+        balance <= normalizedThresholds.insufficient -> R.drawable.ic_live_update_insufficient
+        balance <= normalizedThresholds.danger -> R.drawable.warning_24px
+        else -> R.drawable.ic_live_update_sufficient
+    }
+}
+
 class LiveUpdateNotificationManager @Inject constructor(
     @param:ApplicationContext private val context: Context,
 ) {
@@ -87,8 +99,8 @@ class LiveUpdateNotificationManager @Inject constructor(
     }
 
     fun buildNotification(
-        totalBalance: Double,
-        siteCount: Int,
+        balance: Double,
+        siteName: String,
         thresholds: BalanceThresholds = BalanceThresholds(),
     ): Notification {
         val pendingIntent = PendingIntent.getActivity(
@@ -99,8 +111,8 @@ class LiveUpdateNotificationManager @Inject constructor(
         )
 
         val normalizedThresholds = thresholds.normalized()
-        val balanceText = "$${String.format("%.2f", totalBalance)}"
-        val progress = calculateBalanceProgress(totalBalance, normalizedThresholds)
+        val balanceText = "$${String.format("%.2f", balance)}"
+        val progress = calculateBalanceProgress(balance, normalizedThresholds)
         val segmentLengths = calculateSegmentLengths(normalizedThresholds)
         val pointPositions = calculatePointPositions(normalizedThresholds)
         val sufficientProgress = normalizedThresholds.sufficient.toProgressUnits()
@@ -148,10 +160,16 @@ class LiveUpdateNotificationManager @Inject constructor(
                     .setColor(Color.parseColor("#6B7280")),
             )
 
+        val title = when {
+            balance <= normalizedThresholds.insufficient -> "${siteName}当前余额不足，即将断粮！"
+            balance <= normalizedThresholds.danger -> "${siteName}当前余额有点危险，请及时充值"
+            else -> "${siteName}当前余额充足"
+        }
+
         val builder = NotificationCompat.Builder(context, NotificationChannels.LIVE_UPDATE_CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_launcher_monochrome)
-            .setContentTitle("AI API 总余额")
-            .setContentText("$balanceText | $siteCount 个站点")
+            .setSmallIcon(resolveLiveUpdateStateIconRes(balance, normalizedThresholds))
+            .setContentTitle(title)
+            .setContentText(balanceText)
             .setShortCriticalText(balanceText)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -169,11 +187,11 @@ class LiveUpdateNotificationManager @Inject constructor(
     }
 
     fun update(
-        totalBalance: Double,
-        siteCount: Int,
+        balance: Double,
+        siteName: String,
         thresholds: BalanceThresholds = BalanceThresholds(),
     ) {
-        val notification = buildNotification(totalBalance, siteCount, thresholds)
+        val notification = buildNotification(balance, siteName, thresholds)
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.notify(NOTIFICATION_ID, notification)
     }

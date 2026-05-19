@@ -6,32 +6,42 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -57,7 +67,9 @@ fun DashboardScreen(
 ) {
     val sites by viewModel.sites.collectAsState()
     val pollingState by viewModel.pollingState.collectAsState()
+    val monitoredSiteId by viewModel.monitoredSiteId.collectAsState()
     val context = LocalContext.current
+    var showSitePickerDialog by remember { mutableStateOf(false) }
 
     val notifPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -147,6 +159,39 @@ fun DashboardScreen(
                 }
             }
 
+            if (sites.isNotEmpty()) {
+                item {
+                    val selectedName = sites.firstOrNull { it.id == monitoredSiteId }?.name ?: "未选择"
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showSitePickerDialog = true },
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Column {
+                                Text("通知监控站点", style = MaterialTheme.typography.titleSmall)
+                                Text(
+                                    selectedName,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+
             if (sites.isEmpty()) {
                 item {
                     Column(
@@ -172,6 +217,48 @@ fun DashboardScreen(
                     onClick = { onNavigateToSiteDetail(site.id) },
                 )
             }
+        }
+
+        if (showSitePickerDialog) {
+            AlertDialog(
+                onDismissRequest = { showSitePickerDialog = false },
+                title = { Text("选择监控站点") },
+                text = {
+                    LazyColumn(modifier = Modifier.heightIn(max = 400.dp)) {
+                        items(sites, key = { it.id }) { site ->
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.setMonitoredSite(site.id, site.name)
+                                        showSitePickerDialog = false
+                                    }
+                                    .padding(vertical = 8.dp),
+                            ) {
+                                RadioButton(
+                                    selected = site.id == monitoredSiteId,
+                                    onClick = {
+                                        viewModel.setMonitoredSite(site.id, site.name)
+                                        showSitePickerDialog = false
+                                    },
+                                )
+                                Text(
+                                    site.name,
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    style = MaterialTheme.typography.bodyLarge,
+                                )
+                            }
+                            HorizontalDivider()
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { showSitePickerDialog = false }) {
+                        Text("取消")
+                    }
+                },
+            )
         }
     }
 }

@@ -42,7 +42,7 @@ class BalancePollingService : LifecycleService() {
         super.onStartCommand(intent, flags, startId)
 
         val liveUpdateThresholds = currentLiveUpdateThresholds()
-        val notification = liveNotification.buildNotification(0.0, 0, liveUpdateThresholds)
+        val notification = liveNotification.buildNotification(0.0, "监控中...", liveUpdateThresholds)
         ServiceCompat.startForeground(
             this,
             LiveUpdateNotificationManager.NOTIFICATION_ID,
@@ -89,7 +89,19 @@ class BalancePollingService : LifecycleService() {
             )
         }
 
-        liveNotification.update(totalBalance, siteCount, liveUpdateThresholds)
+        val monitoredId = settingsStore.monitoredSiteId
+        val monitoredSite = sites.firstOrNull { it.id == monitoredId } ?: sites.firstOrNull()
+        if (monitoredSite != null) {
+            if (monitoredSite.id != monitoredId) {
+                settingsStore.monitoredSiteId = monitoredSite.id
+                settingsStore.monitoredSiteName = monitoredSite.name
+            }
+            val monitoredResult = results[monitoredSite.id]
+            val monitoredBalance = if (monitoredResult is BalanceResult.Success) monitoredResult.balance else 0.0
+            liveNotification.update(monitoredBalance, monitoredSite.name, liveUpdateThresholds)
+        } else {
+            liveNotification.update(0.0, "暂无站点", liveUpdateThresholds)
+        }
     }
 
     override fun onDestroy() {

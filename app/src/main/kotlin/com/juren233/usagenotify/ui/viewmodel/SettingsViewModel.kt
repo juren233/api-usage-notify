@@ -76,8 +76,11 @@ class SettingsViewModel @Inject constructor(
     private fun refreshLiveUpdateNotification() {
         val state = pollingStateHolder.state.value
         if (!state.isPolling) return
-        val siteCount = state.balances.values.count { it is BalanceResult.Success }
-        liveNotification.update(state.totalBalance, siteCount, liveUpdateThresholds())
+        val monitoredId = settingsStore.monitoredSiteId
+        val monitoredResult = state.balances[monitoredId]
+        val balance = if (monitoredResult is BalanceResult.Success) monitoredResult.balance else 0.0
+        val siteName = settingsStore.monitoredSiteName.ifEmpty { "监控中..." }
+        liveNotification.update(balance, siteName, liveUpdateThresholds())
     }
 }
 

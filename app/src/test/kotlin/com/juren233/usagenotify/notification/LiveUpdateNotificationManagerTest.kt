@@ -1,5 +1,6 @@
 package com.juren233.usagenotify.notification
 
+import com.juren233.usagenotify.R
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -84,5 +85,37 @@ class LiveUpdateNotificationManagerTest {
         )
 
         assertEquals(listOf(0, 750, 900, 1000), points)
+    }
+
+    @Test
+    fun smallIconUsesDangerousForDangerAndInsufficientStates() {
+        val thresholds = BalanceThresholds(
+            sufficient = 10.0,
+            danger = 2.5,
+            insufficient = 1.0,
+        )
+
+        assertEquals(
+            R.drawable.warning_24px,
+            resolveLiveUpdateStateIconRes(balance = 2.4, thresholds = thresholds),
+        )
+        assertEquals(
+            R.drawable.ic_live_update_insufficient,
+            resolveLiveUpdateStateIconRes(balance = 0.9, thresholds = thresholds),
+        )
+    }
+
+    @Test
+    fun smallIconUsesNotificationForSufficientState() {
+        val thresholds = BalanceThresholds(
+            sufficient = 10.0,
+            danger = 2.5,
+            insufficient = 1.0,
+        )
+
+        assertEquals(
+            R.drawable.ic_live_update_sufficient,
+            resolveLiveUpdateStateIconRes(balance = 10.0, thresholds = thresholds),
+        )
     }
 }

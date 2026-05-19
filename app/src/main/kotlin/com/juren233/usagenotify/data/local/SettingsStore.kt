@@ -36,6 +36,14 @@ class SettingsStore(context: Context) {
             liveUpdateSufficientThreshold = value
         }
 
+    var monitoredSiteId: Long
+        get() = prefs.getLong("monitored_site_id", -1L)
+        set(value) = prefs.edit().putLong("monitored_site_id", value).apply()
+
+    var monitoredSiteName: String
+        get() = prefs.getString("monitored_site_name", "") ?: ""
+        set(value) = prefs.edit().putString("monitored_site_name", value).apply()
+
     val effectiveIntervalSeconds: Int
         get() = if (isRealtimeMode) 10 else refreshIntervalSeconds
 }
