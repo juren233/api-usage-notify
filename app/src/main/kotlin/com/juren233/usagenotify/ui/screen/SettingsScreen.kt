@@ -36,7 +36,7 @@ import kotlin.math.roundToInt
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit,
+    onNavigateBack: (() -> Unit)? = null,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val pollingState by viewModel.isPolling.collectAsState()
@@ -52,8 +52,10 @@ fun SettingsScreen(
             TopAppBar(
                 title = { Text("设置") },
                 navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                    if (onNavigateBack != null) {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回")
+                        }
                     }
                 },
             )

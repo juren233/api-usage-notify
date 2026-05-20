@@ -132,7 +132,7 @@ class LiveUpdateNotificationManager @Inject constructor(
             .addProgressSegment(
                 NotificationCompat.ProgressStyle.Segment(segmentLengths[1])
                     .setId(2)
-                    .setColor(Color.parseColor("#FACC15")),
+                    .setColor(Color.parseColor("#FFFF00")),
             )
             .addProgressSegment(
                 NotificationCompat.ProgressStyle.Segment(segmentLengths[2])
@@ -147,7 +147,7 @@ class LiveUpdateNotificationManager @Inject constructor(
             .addProgressPoint(
                 NotificationCompat.ProgressStyle.Point(pointPositions[1])
                     .setId(2)
-                    .setColor(Color.parseColor("#FACC15")),
+                    .setColor(Color.parseColor("#FFFF00")),
             )
             .addProgressPoint(
                 NotificationCompat.ProgressStyle.Point(pointPositions[2])

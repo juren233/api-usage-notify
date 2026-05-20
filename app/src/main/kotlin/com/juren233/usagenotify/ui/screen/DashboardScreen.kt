@@ -62,7 +62,6 @@ import java.util.Locale
 fun DashboardScreen(
     onNavigateToAddSite: () -> Unit,
     onNavigateToSiteDetail: (Long) -> Unit,
-    onNavigateToSettings: () -> Unit,
     viewModel: DashboardViewModel = hiltViewModel(),
 ) {
     val sites by viewModel.sites.collectAsState()
@@ -80,41 +79,38 @@ fun DashboardScreen(
             TopAppBar(
                 title = { Text("UsageNotify") },
                 actions = {
-                    IconButton(onClick = {
-                        if (pollingState.isPolling) {
-                            context.stopService(Intent(context, BalancePollingService::class.java))
-                        } else {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                if (ContextCompat.checkSelfPermission(
-                                        context, Manifest.permission.POST_NOTIFICATIONS
-                                    ) != PackageManager.PERMISSION_GRANTED
-                                ) {
-                                    notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                                }
-                            }
-                            context.startForegroundService(
-                                Intent(context, BalancePollingService::class.java)
-                            )
-                        }
-                    }) {
-                        if (pollingState.isPolling) {
-                            Icon(
-                                painter = painterResource(R.drawable.ic_stop_24),
-                                contentDescription = "停止监控",
-                            )
-                        } else {
-                            Icon(Icons.Default.PlayArrow, contentDescription = "开始监控")
-                        }
-                    }
-                    IconButton(onClick = onNavigateToSettings) {
-                        Icon(Icons.Default.Settings, contentDescription = "设置")
+                    IconButton(onClick = onNavigateToAddSite) {
+                        Icon(Icons.Default.Add, contentDescription = "添加中转站")
                     }
                 },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNavigateToAddSite) {
-                Icon(Icons.Default.Add, contentDescription = "添加站点")
+            FloatingActionButton(onClick = {
+                if (pollingState.isPolling) {
+                    context.stopService(Intent(context, BalancePollingService::class.java))
+                } else {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (ContextCompat.checkSelfPermission(
+                                context, Manifest.permission.POST_NOTIFICATIONS
+                            ) != PackageManager.PERMISSION_GRANTED
+                        ) {
+                            notifPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                    context.startForegroundService(
+                        Intent(context, BalancePollingService::class.java)
+                    )
+                }
+            }) {
+                if (pollingState.isPolling) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_stop_24),
+                        contentDescription = "停止监控",
+                    )
+                } else {
+                    Icon(Icons.Default.PlayArrow, contentDescription = "开始监控")
+                }
             }
         },
     ) { padding ->
